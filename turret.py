@@ -39,7 +39,7 @@ def processTargets(frame, boxes, indices, classes, class_ids, confidences):
 
 if __name__=='__main__':
     # Load YOLO
-    net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+    net = cv2.dnn.readNet("yolov3-tiny.weights", "yolov3-tiny.cfg")
     layer_names = net.getLayerNames()
     outputlayers = [layer_names[i-1] for i in net.getUnconnectedOutLayers()]
 
@@ -52,7 +52,7 @@ if __name__=='__main__':
     nms_threshold = 0.4
 
     # Load video
-    video = cv2.VideoCapture(1)
+    video = cv2.VideoCapture(0)
 
     while True:
         ret, frame = video.read()
