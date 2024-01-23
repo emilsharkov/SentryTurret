@@ -9,8 +9,10 @@ FRAME_SCALE = 3.5
 SCALED_WIDTH = int(FRAME_WIDTH/FRAME_SCALE)
 SCALED_HEIGHT = int(FRAME_HEIGHT/FRAME_SCALE)
 
-# def calculateTurnAngles(frameCenterXCoordinate, frameCenterYCoordinate, targetXCoordinate, targetYCoordinate):
-
+def calculateTurnAngles(targetX,targetY):
+    xAngle = (targetX / SCALED_WIDTH) * (CAMERA_FOV_DEGREES / 2)
+    yAngle = (targetY / SCALED_HEIGHT) * (CAMERA_FOV_DEGREES / 2)
+    return xAngle,yAngle
 
 def processTargets(frame, boxes, indices, classes, class_ids, confidences):
     frameHeight, frameWidth, frameChannels = frame.shape
