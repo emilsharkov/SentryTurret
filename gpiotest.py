@@ -1,20 +1,14 @@
-import RPi.GPIO as GPIO
-import time
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(25,GPIO.OUT)
-pwm=GPIO.PWM(25,100)
-pwm.start(100)
-print('Dobre')
-try:
-	while True:
-		pwm.ChangeDutyCycle(5)
-		time.sleep(1)
-		
-		pwm.ChangeDutyCycle(15)
-		time.sleep(1)
-		
-		pwm.ChangeDutyCycle(25)
-		time.sleep(1)
-except KeyboardInterrupt:
-	pwm.stop()
-	GPIO.cleanup()
+import subprocess
+
+def start_pigpiod():
+    try:
+        # Starting pigpiod as a sudo command
+        subprocess.run(['sudo', 'pigpiod'], check=True)
+        print("pigpiod started successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while starting pigpiod: {e}")
+
+# Call the function to start pigpiod
+start_pigpiod()
+
+servo = Servo(gpio, min_value=0, max_value=270, min_pulse=0.5, max_pulse=2.5, frequency=50)
