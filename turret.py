@@ -1,149 +1,154 @@
-import cv2
-import numpy as np
-import imutils
 import Servo
 import Blaster
+import Camera
+import cv2
+import imutils
+import numpy as np
 
-CAMERA_FOV_DEGREES = 70
-FRAME_WIDTH = 1440
-FRAME_HEIGHT = 1080
-FRAME_SCALE = 8
-SCALED_WIDTH = int(FRAME_WIDTH/FRAME_SCALE)
-SCALED_HEIGHT = int(FRAME_HEIGHT/FRAME_SCALE)
-
-def calculateTurnAngles(targetX,targetY):
-    xAngle = (targetX / SCALED_WIDTH) * (CAMERA_FOV_DEGREES / 2)
-    yAngle = (targetY / SCALED_HEIGHT) * (CAMERA_FOV_DEGREES / 2)
-    return xAngle,yAngle
-
-def processTargets(frame, boxes, indices, classes, class_ids, confidences,horizontalServo,verticalServo,blaster):
-    frameCenterX = SCALED_WIDTH // 2
-    frameCenterY = SCALED_HEIGHT // 2
-
-    for i in indices:
-        # TO DO: add feature to support multiple people in frame
-        if i != 0:
-            return 
+class Turret:
+    def __init__(self, xServo: Servo, yServo: Servo, blaster: Blaster, camera: Camera, net: cv2.dnn_Net):
+        if len({xServo.gpioPin, yServo.gpioPin, blaster.gpioPin}) != 3:
+            raise ValueError('Each servo and blaster must use unique GPIO pins')
         
-        x, y, w, h = boxes[i]
-        label = classes[class_ids[i]]
-        confidence = confidences[i]
+        self.xServo = xServo
+        self.yServo = yServo
+        self.blaster = blaster
+        self.camera = camera
+        self.net = net
+    
+    def __del__(self):
+        cv2.destroyAllWindows()
 
-        # Draw bounding box and label
-        targetX = x + w//2
-        targetY = y + h//2
-        targetColor = (0,0,255)
+    def calculate_turn_angles(self,targetX,targetY):
+        xAngle = (targetX / self.camera.scaled_width) * (self.camera.fov / 2)
+        yAngle = (targetY / self.camera.scaled_height) * (self.camera.fov / 2)
+        return xAngle,yAngle
+
+    def turn_servos(self,xAngle,yAngle):
+        self.xServo.turn(xAngle)
+        self.yServo.turn(yAngle)
+
+    def toggle_shoot(self,shooting):
+        self.blaster.toggleShoot(shooting)
+
+    def processTargets(self,frame, boxes, indices, classes, class_ids, confidences):
+        frameCenterX = self.camera.scaled_width // 2
+        frameCenterY = self.camera.scaled_height // 2
+
+        for i in indices:
+            # TO DO: add feature to support multiple people in frame
+            if i != 0:
+                return 
+            
+            x, y, w, h = boxes[i]
+            label = classes[class_ids[i]]
+            confidence = confidences[i]
+
+            # Draw bounding box and label
+            targetX = x + w//2
+            targetY = y + h//2
+            targetColor = (0,0,255)
+            
+            if frameCenterX in range(targetX - 20,targetX + 20) and frameCenterY in range(targetY - 20,targetY + 20) :
+                targetColor = (0,255,0)
+                self.toggleShoot(True)
+            else:
+                self.toggleShoot(False)
+
+            xAngle, yAngle = self.calculate_turn_angles(targetX,targetY)
+            self.turn_servos(xAngle,yAngle)
+
+            cv2.circle(frame,(targetX,targetY),10, targetColor, -1)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, f"{label} {confidence:.2f}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+    def processFrame(self,frame,output_layers,conf_threshold,nms_threshold):
+        frame = imutils.resize(frame, width=self.camera.scaled_width)
+        height, width, channels = frame.shape
+
+        # Detect objects
+        blob = cv2.dnn.blobFromImage(frame, 0.00392, (self.camera.scaled_width,self.camera.scaled_width), (0, 0, 0), True, crop=False)
+        self.net.setInput(blob)
+        outs = self.net.forward(output_layers)
+
+        # Process detections
+        class_ids = []
+        confidences = []
+        boxes = []
+        for out in outs:
+            for detection in out:
+                scores = detection[5:]
+                class_id = np.argmax(scores)
+                confidence = scores[class_id]
+
+                if confidence > conf_threshold and class_id == 0:  # Person class
+                    # Scale the bounding box coordinates
+                    center_x = int(detection[0] * width)
+                    center_y = int(detection[1] * height)
+                    w = int(detection[2] * width)
+                    h = int(detection[3] * height)
+
+                    # Calculate top-left corner coordinates
+                    x = int(center_x - w / 2)
+                    y = int(center_y - h / 2)
+
+                    boxes.append([x, y, w, h])
+                    confidences.append(float(confidence))
+                    class_ids.append(class_id)
+
+        # Apply non-maximum suppression to eliminate redundant overlapping boxes
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+        cv2.circle(frame,(width//2, height//2),10, (0,0,255), -1)
+
+        return frame,boxes,indices,class_ids,confidences 
+    
+    def get_classes():
+        with open("coco.names", "r") as f:
+            return [line.strip() for line in f.readlines()]
         
-        if frameCenterX in range(targetX - 20,targetX + 20) and frameCenterY in range(targetY - 20,targetY + 20) :
-            targetColor = (0,255,0)
-            blaster.toggleShoot(True)
-        else:
-            blaster.toggleShoot(False)
-
-        horizontalAngle, verticalAngle = calculateTurnAngles(targetX,targetY)
-        horizontalServo.turn(horizontalAngle)
-        verticalServo.turn(verticalAngle)
-
-        cv2.circle(frame,(targetX,targetY),10, targetColor, -1)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.putText(frame, f"{label} {confidence:.2f}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-def processFrame(frame,net,outputLayers,conf_threshold,nms_threshold):
-    frame = imutils.resize(frame, width=SCALED_WIDTH)
-    height, width, channels = frame.shape
-
-    # Detect objects
-    blob = cv2.dnn.blobFromImage(frame, 0.00392, (SCALED_WIDTH,SCALED_WIDTH), (0, 0, 0), True, crop=False)
-    net.setInput(blob)
-    outs = net.forward(outputLayers)
-
-    # Process detections
-    class_ids = []
-    confidences = []
-    boxes = []
-    for out in outs:
-        for detection in out:
-            scores = detection[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-
-            if confidence > conf_threshold and class_id == 0:  # Person class
-                # Scale the bounding box coordinates
-                center_x = int(detection[0] * width)
-                center_y = int(detection[1] * height)
-                w = int(detection[2] * width)
-                h = int(detection[3] * height)
-
-                # Calculate top-left corner coordinates
-                x = int(center_x - w / 2)
-                y = int(center_y - h / 2)
-
-                boxes.append([x, y, w, h])
-                confidences.append(float(confidence))
-                class_ids.append(class_id)
-
-    # Apply non-maximum suppression to eliminate redundant overlapping boxes
-    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-    cv2.circle(frame,(width//2, height//2),10, (0,0,255), -1)
-
-    return frame,boxes,indices,class_ids,confidences 
-
-def getClassifications():
-    with open("coco.names", "r") as f:
-        return [line.strip() for line in f.readlines()]
-
-def initializeModel():
-    net = cv2.dnn.readNet("yolov3-tiny.weights", "yolov3-tiny.cfg")
-    layer_names = net.getLayerNames()
-    outputlayers = [layer_names[i-1] for i in net.getUnconnectedOutLayers()]
-    return net,outputlayers
-
-def initializeBlaster():
-    blaster = Blaster(gpioPin=2)
-    return blaster
-
-def initializeServos():
-    horizontalServo = Servo(
-        gpioPin=17,
-        servo_range=270,
-        desired_servo_range=270,
-        min_pulse_micro_seconds=500,
-        max_pulse_micro_seconds=2500,
-        frequency=50
-    )
-    
-    verticalServo = Servo(
-        gpioPin=17,
-        servo_range=270,
-        desired_servo_range=270,
-        min_pulse_micro_seconds=500,
-        max_pulse_micro_seconds=2500,
-        frequency=50
-    )
-    
-    horizontalServo.turn(horizontalServo.max_range // 2)
-    verticalServo.turn(verticalServo.max_range // 2)
-
-    return horizontalServo,verticalServo    
-
+    def get_output_layers(self):
+        layer_names = self.net.getLayerNames()
+        output_layers = [layer_names[i-1] for i in self.net.getUnconnectedOutLayers()]
+        
 if __name__=='__main__':
-    horizontalServo,verticalServo = initializeServos()
-    blaster = initializeBlaster()
-    net,outputLayers = initializeModel()
-    classes = getClassifications()
-    conf_threshold = 0.5
-    nms_threshold = 0.4
+    turret = Turret(
+        xServo=Servo(
+            gpioPin=17,
+            servo_range=270,
+            desired_servo_range=270,
+            min_pulse_micro_seconds=500,
+            max_pulse_micro_seconds=2500,
+            frequency=50
+        ),
+        yServo=Servo(
+            gpioPin=17,
+            servo_range=270,
+            desired_servo_range=270,
+            min_pulse_micro_seconds=500,
+            max_pulse_micro_seconds=2500,
+            frequency=50
+        ),
+        blaster=Blaster(
+            gpioPin=24
+        ),
+        camera=Camera(
+            camera_index=1,
+            fov=70,
+            frame_width=1440,
+            frame_height=1080,
+            frame_scale_down=8
+        ),
+        net=cv2.dnn.readNet("yolov3-tiny.weights", "yolov3-tiny.cfg")
+    )
 
-    video = cv2.VideoCapture(1)
+    output_layers = turret.get_output_layers()
+    classes = Turret.get_classes()
 
     while True:
-        ret, frame = video.read()
+        ret, frame = turret.camera.video.read()
         if not ret:
             break
 
-        frame,boxes,indices,class_ids,confidences = processFrame(frame,net,outputLayers,conf_threshold,nms_threshold)
-        processTargets(frame,boxes,indices,classes,class_ids,confidences,horizontalServo,verticalServo,blaster)
+        frame,boxes,indices,class_ids,confidences = turret.processFrame(frame,output_layers,0.5,0.4)
+        turret.processTargets(frame,boxes,indices,classes,class_ids,confidences)
         cv2.imshow("People Detection", frame)
-
-    video.release()
-    cv2.destroyAllWindows()

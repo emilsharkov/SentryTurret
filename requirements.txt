@@ -1,5 +1,4 @@
 cv2
 numpy
 imutils
-piServoCtl
-RPIO
+RPi.GPIO
