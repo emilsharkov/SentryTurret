@@ -104,22 +104,22 @@ def initializeBlaster():
 
 def initializeServos():
     horizontalServo = Servo(
-                        gpioPin=0,
-                        servo_range=270,
-                        desired_max_range=270,
-                        min_pulse=0.5,
-                        max_pulse=2.5,
-                        frequency=50
-                    )
+        gpioPin=17,
+        servo_range=270,
+        desired_servo_range=270,
+        min_pulse_micro_seconds=500,
+        max_pulse_micro_seconds=2500,
+        frequency=50
+    )
     
     verticalServo = Servo(
-                        gpioPin=0,
-                        servo_range=270,
-                        desired_max_range=270,
-                        min_pulse=0.5,
-                        max_pulse=2.5,
-                        frequency=50
-                    )
+        gpioPin=17,
+        servo_range=270,
+        desired_servo_range=270,
+        min_pulse_micro_seconds=500,
+        max_pulse_micro_seconds=2500,
+        frequency=50
+    )
     
     horizontalServo.turn(horizontalServo.max_range // 2)
     verticalServo.turn(verticalServo.max_range // 2)
