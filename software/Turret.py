@@ -103,12 +103,13 @@ class Turret:
         return frame,boxes,indices,class_ids,confidences 
     
     def get_classes():
-        with open("coco.names", "r") as f:
+        with open("../configs/coco.names", "r") as f:
             return [line.strip() for line in f.readlines()]
         
     def get_output_layers(self):
         layer_names = self.net.getLayerNames()
         output_layers = [layer_names[i-1] for i in self.net.getUnconnectedOutLayers()]
+        return output_layers
         
 if __name__=='__main__':
     turret = Turret(
@@ -121,7 +122,7 @@ if __name__=='__main__':
             frequency=50
         ),
         yServo=Servo(
-            gpioPin=17,
+            gpioPin=23,
             servo_range=270,
             desired_servo_range=270,
             min_pulse_micro_seconds=500,
@@ -138,7 +139,7 @@ if __name__=='__main__':
             frame_height=1080,
             frame_scale_down=8
         ),
-        net=cv2.dnn.readNet("yolov3-tiny.weights", "yolov3-tiny.cfg")
+        net=cv2.dnn.readNet("../configs/yolov3-tiny.weights", "../configs/yolov3-tiny.cfg")
     )
 
     output_layers = turret.get_output_layers()
