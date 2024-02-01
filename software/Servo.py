@@ -8,11 +8,12 @@ class Servo:
         self.angle_max_range = desired_servo_range if desired_servo_range == None else servo_range
         self.min_pulse_micro_seconds = min_pulse_micro_seconds
         self.max_pulse_micro_seconds = max_pulse_micro_seconds
-
+        self.gpioPin = gpioPin
+        
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(gpioPin,GPIO.OUT)
         self.pwm = GPIO.PWM(gpioPin,frequency)
-        self.pwm.start(self.getDutyCycle(270))
+        self.pwm.start(self.getDutyCycle(self.currentAngle))
 
     def __del__(self):
         self.pwm.stop()
@@ -41,7 +42,7 @@ if __name__=='__main__':
     servo1 = Servo(
         gpioPin=17,
         servo_range=270,
-        desired_servo_range=270,
+        desired_servo_range=80,
         min_pulse_micro_seconds=500,
         max_pulse_micro_seconds=2500,
         frequency=50
@@ -50,18 +51,18 @@ if __name__=='__main__':
     servo2 = Servo(
         gpioPin=24,
         servo_range=270,
-        desired_servo_range=270,
+        desired_servo_range=180,
         min_pulse_micro_seconds=500,
         max_pulse_micro_seconds=2500,
         frequency=50
     )
     
-    servo1.turn(135)
-    servo2.turn(135)
+    servo1.turn(40)
+    servo2.turn(90)
     time.sleep(1)
-    servo1.turn(135)
-    servo2.turn(135)
+    servo1.turn(40)
+    servo2.turn(90)
     time.sleep(1)
-    servo1.turn(-270)
-    servo2.turn(-270)
+    servo1.turn(-90)
+    servo2.turn(-180)
     time.sleep(1)

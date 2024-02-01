@@ -11,13 +11,13 @@ class Blaster:
     def __del__(self):
         GPIO.cleanup()
 
-    def toggleShoot(self,isBlasting):
+    def toggle_shoot(self,isBlasting):
         self.isBlasting = isBlasting
         voltageOutput = GPIO.HIGH if self.isBlasting else GPIO.LOW
         GPIO.output(self.gpioPin,voltageOutput)
 
 if __name__=='__main__':
     blaster = Blaster(23)
-    blaster.toggleShoot(True)
+    blaster.toggle_shoot(True)
     time.sleep(1)
-    blaster.toggleShoot(False)
+    blaster.toggle_shoot(False)

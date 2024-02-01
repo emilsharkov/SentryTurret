@@ -1,6 +1,6 @@
-import Servo
-import Blaster
-import Camera
+from Servo import Servo
+from Blaster import Blaster
+from Camera import Camera
 import cv2
 import imutils
 import numpy as np
@@ -29,7 +29,7 @@ class Turret:
         self.yServo.turn(yAngle)
 
     def toggle_shoot(self,shooting):
-        self.blaster.toggleShoot(shooting)
+        self.blaster.toggle_shoot(shooting)
 
     def processTargets(self,frame, boxes, indices, classes, class_ids, confidences):
         frameCenterX = self.camera.scaled_width // 2
@@ -51,12 +51,13 @@ class Turret:
             
             if frameCenterX in range(targetX - 20,targetX + 20) and frameCenterY in range(targetY - 20,targetY + 20) :
                 targetColor = (0,255,0)
-                self.toggleShoot(True)
+                # self.toggle_shoot(True)
             else:
-                self.toggleShoot(False)
+                self.toggle_shoot(False)
 
             xAngle, yAngle = self.calculate_turn_angles(targetX,targetY)
-            self.turn_servos(xAngle,yAngle)
+            # self.turn_servos(xAngle,yAngle)
+            print(xAngle,yAngle)
 
             cv2.circle(frame,(targetX,targetY),10, targetColor, -1)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -112,35 +113,46 @@ class Turret:
         return output_layers
         
 if __name__=='__main__':
-    turret = Turret(
-        xServo=Servo(
-            gpioPin=17,
-            servo_range=270,
-            desired_servo_range=270,
-            min_pulse_micro_seconds=500,
-            max_pulse_micro_seconds=2500,
-            frequency=50
-        ),
-        yServo=Servo(
-            gpioPin=23,
-            servo_range=270,
-            desired_servo_range=270,
-            min_pulse_micro_seconds=500,
-            max_pulse_micro_seconds=2500,
-            frequency=50
-        ),
-        blaster=Blaster(
-            gpioPin=24
-        ),
-        camera=Camera(
-            camera_index=1,
-            fov=70,
-            frame_width=1440,
-            frame_height=1080,
-            frame_scale_down=8
-        ),
-        net=cv2.dnn.readNet("../configs/yolov3-tiny.weights", "../configs/yolov3-tiny.cfg")
+    x_servo = Servo(
+        gpioPin=17,
+        servo_range=270,
+        desired_servo_range=80,
+        min_pulse_micro_seconds=500,
+        max_pulse_micro_seconds=2500,
+        frequency=50
     )
+
+    y_servo = Servo(
+        gpioPin=24,
+        servo_range=270,
+        desired_servo_range=180,
+        min_pulse_micro_seconds=500,
+        max_pulse_micro_seconds=2500,
+        frequency=50
+    )
+
+    blaster = Blaster(
+        gpioPin=23
+    )
+
+    camera = Camera(
+        camera_index=0,
+        fov=70,
+        frame_width=1440,
+        frame_height=1080,
+        frame_scale_down=8
+    )
+
+    net = cv2.dnn.readNet("../configs/yolov3-tiny.weights", "../configs/yolov3-tiny.cfg")
+
+    turret = Turret(
+        xServo=x_servo,
+        yServo=y_servo,
+        blaster=blaster,
+        camera=camera,
+        net=net
+    )
+
 
     output_layers = turret.get_output_layers()
     classes = Turret.get_classes()
@@ -153,3 +165,5 @@ if __name__=='__main__':
         frame,boxes,indices,class_ids,confidences = turret.processFrame(frame,output_layers,0.5,0.4)
         turret.processTargets(frame,boxes,indices,classes,class_ids,confidences)
         cv2.imshow("People Detection", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
