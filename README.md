@@ -1,8 +1,8 @@
 # SentryTurret
 ## Overview
-This is an autonomous sentry turret piloted by computer vision. It is controlled by a raspberry pi 4 running OpenCV.
+This is an autonomous sentry turret piloted by computer vision and controlled by a Raspberry Pi 4 running OpenCV.
 
 ## Tech Stack
-Software: Python, OpenCV, YOLOv3
-Hardware: RaspberryPi4, 2 Servo motors, Camera
-Chasis: Autodesk Inventor, 3D Printing
+- Software: Python, OpenCV, YOLOv3
+- Hardware: Raspberry Pi 4, 2 Servo motors, Camera
+- Chasis: Autodesk Inventor, 3D Printing
