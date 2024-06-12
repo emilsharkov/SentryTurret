@@ -1,4 +1,0 @@
-cv2
-numpy
-imutils
-RPi.GPIO
