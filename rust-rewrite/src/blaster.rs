@@ -1,12 +1,15 @@
+use getset::Getters;
 use rppal::Gpio;
 
+#[derive(Getters)]
 pub struct Blaster {
-    is_blasting: boolean,
+    #[getset(get = "pub")]
+    is_blasting: bool,
     pin: Gpio::OutputPin,
 }
 
 impl Blaster {
-    fn new(pin_num: u8) -> Self {
+    pub fn new(pin_num: u8) -> Self {
         let gpio = Gpio::new()?;
         let pin = gpio.get(pin_num).unwrap().into_output();
         Blaster { 
@@ -15,8 +18,8 @@ impl Blaster {
         }
     }
 
-    fn fire(&mut self) {
-        self.is_blasting = !self.is_blasting;
+    fn toggle_shoot(&mut self, is_blasting: bool) {
+        self.is_blasting = is_blasting;
         if self.is_blasting { self.pin.set_high() } else { self.pin.set_low()};
     }
 }

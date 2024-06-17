@@ -1,5 +1,4 @@
-extern crate opencv;
-
+use getset::Getters;
 use opencv::prelude::*;
 use opencv::videoio::{VideoCapture, VideoCaptureTrait, CAP_ANY};
 use std::error::Error;
@@ -8,12 +7,19 @@ use opencv::imgproc;
 use opencv::core::Size;
 use opencv::core::Mat;
 
+#[derive(Getters)]
 pub struct Camera {
+    #[getset(get = "pub")]
     fov: f32,
+    #[getset(get = "pub")]
     frame_width: i32,
+    #[getset(get = "pub")]
     frame_height: i32,
+    #[getset(get = "pub")]
     scaled_width: i32,
+    #[getset(get = "pub")]
     scaled_height: i32,
+    #[getset(get = "pub")]
     video: VideoCapture,
 }
 
@@ -52,7 +58,6 @@ impl Drop for Camera {
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create the Camera object
     let mut camera = Camera::new(0, 70.0, 1440, 1080, 8)?;
 
     loop {
