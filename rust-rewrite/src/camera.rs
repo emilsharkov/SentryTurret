@@ -62,14 +62,10 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         let frame = camera.read_video()?;
-        // Resize frame for display
         let mut display_frame = Mat::default();
         imgproc::resize(&frame, &mut display_frame, Size::new(camera.scaled_width, camera.scaled_height), 0.0, 0.0, imgproc::INTER_LINEAR)?;
 
-        // Display the resulting frame
         highgui::imshow("Frame", &display_frame)?;
-
-        // Break the loop when 'q' is pressed
         if highgui::wait_key(1)? == 'q' as i32 {
             break;
         }

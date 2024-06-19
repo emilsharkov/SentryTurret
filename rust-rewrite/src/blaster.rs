@@ -18,8 +18,14 @@ impl Blaster {
         }
     }
 
-    fn toggle_shoot(&mut self, is_blasting: bool) {
+    pub fn toggle_shoot(&mut self, is_blasting: bool) {
         self.is_blasting = is_blasting;
         if self.is_blasting { self.pin.set_high() } else { self.pin.set_low()};
     }
+}
+
+pub fn main() -> Result<(), Box<dyn Error>> {
+    let mut blaster = Blaster::new(23);
+    blaster.toggle_shoot(true);
+    Ok(())
 }

@@ -59,20 +59,19 @@ impl Turret {
             let label = &classes[class_ids[i as usize] as usize];
             let confidence = confidences[i as usize];
 
-            // Draw bounding box and label
             let target_x = box_.x + box_.width / 2;
             let target_y = box_.y + box_.height / 2;
             let mut target_color = Scalar::new(0.0, 0.0, 255.0, 0.0);
 
             if (frame_center_x - 20..=frame_center_x + 20).contains(&target_x) && (frame_center_y - 20..=frame_center_y + 20).contains(&target_y) {
                 target_color = Scalar::new(0.0, 255.0, 0.0, 0.0);
-                // self.toggle_shoot(true);
+                self.blaster.toggle_shoot(true);
             } else {
-                self.toggle_shoot(false);
+                self.blaster.toggle_shoot(false);
             }
 
             let (x_angle, y_angle) = self.calculate_turn_angles(target_x, target_y);
-            // self.turn_servos(x_angle, y_angle);
+            self.turn_servos(x_angle, y_angle);
             println!("{}, {}", x_angle, y_angle);
 
             imgproc::circle(frame, Point::new(target_x, target_y), 10, target_color, -1, imgproc::LINE_8, 0).unwrap();
@@ -135,8 +134,8 @@ impl Turret {
 
         loop {
             let frame = self.camera.read_video()?;
-            let (mut frame, boxes, indices, class_ids, confidences) = turret.process_frame(&mut frame, &output_layers, 0.5, 0.4);
-            turret.process_targets(&mut frame, &boxes, &indices, &classes, &class_ids, &confidences);
+            let (mut frame, boxes, indices, class_ids, confidences) = self.process_frame(&mut frame, &output_layers, 0.5, 0.4);
+            self.process_targets(&mut frame, &boxes, &indices, &classes, &class_ids, &confidences);
             
             highgui::imshow("Frame", &display_frame)?;
             if highgui::wait_key(1)? == 'q' as i32 {
